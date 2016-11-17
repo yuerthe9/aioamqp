@@ -4,8 +4,9 @@
 # pylint: disable=unused-import
 
 import asyncio
+import sys
 
-try:
+if sys.version_info[:3] > (3, 4, 2):
     from asyncio import ensure_future
-except ImportError:
+else:
     ensure_future = asyncio.async
