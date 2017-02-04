@@ -220,13 +220,6 @@ class AmqpProtocol(asyncio.StreamReaderProtocol):
     def dispatch_frame(self, frame=None):
         """Dispatch the received frame to the corresponding handler"""
 
-        method_dispatch = {
-            (amqp_constants.CLASS_CONNECTION, amqp_constants.CONNECTION_CLOSE): self.server_close,
-            (amqp_constants.CLASS_CONNECTION, amqp_constants.CONNECTION_CLOSE_OK): self.close_ok,
-            (amqp_constants.CLASS_CONNECTION, amqp_constants.CONNECTION_TUNE): self.tune,
-            (amqp_constants.CLASS_CONNECTION, amqp_constants.CONNECTION_START): self.start,
-            (amqp_constants.CLASS_CONNECTION, amqp_constants.CONNECTION_OPEN_OK): self.open_ok,
-        }
         if not frame:
             frame = yield from self.get_frame()
 
@@ -241,10 +234,10 @@ class AmqpProtocol(asyncio.StreamReaderProtocol):
                 logger.info("Unknown channel %s", frame.channel)
             return
 
-        if (frame.class_id, frame.method_id) not in method_dispatch:
+        if (frame.class_id, frame.method_id) not in self.method_dispatch:
             logger.info("frame %s %s is not handled", frame.class_id, frame.method_id)
             return
-        yield from method_dispatch[(frame.class_id, frame.method_id)](frame)
+        yield from self.method_dispatch[(frame.class_id, frame.method_id)](self, frame)
 
     def release_channel_id(self, channel_id):
         """Called from the channel instance, it relase a previously used
@@ -443,3 +436,11 @@ class AmqpProtocol(asyncio.StreamReaderProtocol):
         self.channels[channel_id] = channel
         yield from channel.open()
         return channel
+
+    method_dispatch = {
+        (amqp_constants.CLASS_CONNECTION, amqp_constants.CONNECTION_CLOSE): server_close,
+        (amqp_constants.CLASS_CONNECTION, amqp_constants.CONNECTION_CLOSE_OK): close_ok,
+        (amqp_constants.CLASS_CONNECTION, amqp_constants.CONNECTION_TUNE): tune,
+        (amqp_constants.CLASS_CONNECTION, amqp_constants.CONNECTION_START): start,
+        (amqp_constants.CLASS_CONNECTION, amqp_constants.CONNECTION_OPEN_OK): open_ok,
+    }
