@@ -71,40 +71,9 @@ class Channel:
 
     @asyncio.coroutine
     def dispatch_frame(self, frame):
-        methods = {
-            (amqp_constants.CLASS_CHANNEL, amqp_constants.CHANNEL_OPEN_OK): self.open_ok,
-            (amqp_constants.CLASS_CHANNEL, amqp_constants.CHANNEL_FLOW_OK): self.flow_ok,
-            (amqp_constants.CLASS_CHANNEL, amqp_constants.CHANNEL_CLOSE_OK): self.close_ok,
-            (amqp_constants.CLASS_CHANNEL, amqp_constants.CHANNEL_CLOSE): self.server_channel_close,
-
-            (amqp_constants.CLASS_EXCHANGE, amqp_constants.EXCHANGE_DECLARE_OK): self.exchange_declare_ok,
-            (amqp_constants.CLASS_EXCHANGE, amqp_constants.EXCHANGE_BIND_OK): self.exchange_bind_ok,
-            (amqp_constants.CLASS_EXCHANGE, amqp_constants.EXCHANGE_UNBIND_OK): self.exchange_unbind_ok,
-            (amqp_constants.CLASS_EXCHANGE, amqp_constants.EXCHANGE_DELETE_OK): self.exchange_delete_ok,
-
-            (amqp_constants.CLASS_QUEUE, amqp_constants.QUEUE_DECLARE_OK): self.queue_declare_ok,
-            (amqp_constants.CLASS_QUEUE, amqp_constants.QUEUE_DELETE_OK): self.queue_delete_ok,
-            (amqp_constants.CLASS_QUEUE, amqp_constants.QUEUE_BIND_OK): self.queue_bind_ok,
-            (amqp_constants.CLASS_QUEUE, amqp_constants.QUEUE_UNBIND_OK): self.queue_unbind_ok,
-            (amqp_constants.CLASS_QUEUE, amqp_constants.QUEUE_PURGE_OK): self.queue_purge_ok,
-
-            (amqp_constants.CLASS_BASIC, amqp_constants.BASIC_QOS_OK): self.basic_qos_ok,
-            (amqp_constants.CLASS_BASIC, amqp_constants.BASIC_CONSUME_OK): self.basic_consume_ok,
-            (amqp_constants.CLASS_BASIC, amqp_constants.BASIC_CANCEL_OK): self.basic_cancel_ok,
-            (amqp_constants.CLASS_BASIC, amqp_constants.BASIC_GET_OK): self.basic_get_ok,
-            (amqp_constants.CLASS_BASIC, amqp_constants.BASIC_GET_EMPTY): self.basic_get_empty,
-            (amqp_constants.CLASS_BASIC, amqp_constants.BASIC_DELIVER): self.basic_deliver,
-            (amqp_constants.CLASS_BASIC, amqp_constants.BASIC_CANCEL): self.server_basic_cancel,
-            (amqp_constants.CLASS_BASIC, amqp_constants.BASIC_ACK): self.basic_server_ack,
-            (amqp_constants.CLASS_BASIC, amqp_constants.BASIC_NACK): self.basic_server_nack,
-            (amqp_constants.CLASS_BASIC, amqp_constants.BASIC_RECOVER_OK): self.basic_recover_ok,
-
-            (amqp_constants.CLASS_CONFIRM, amqp_constants.CONFIRM_SELECT_OK): self.confirm_select_ok,
-        }
-
-        if (frame.class_id, frame.method_id) not in methods:
+        if (frame.class_id, frame.method_id) not in self.methods:
             raise NotImplementedError("Frame (%s, %s) is not implemented" % (frame.class_id, frame.method_id))
-        yield from methods[(frame.class_id, frame.method_id)](frame)
+        yield from self.methods[(frame.class_id, frame.method_id)](self, frame)
 
     @asyncio.coroutine
     def _write_frame(self, frame, request, no_wait, timeout=None, no_check_open=False):
@@ -872,3 +841,34 @@ class Channel:
         fut = self._get_waiter('confirm_select')
         fut.set_result(True)
         logger.debug("Confirm selected")
+
+    methods = {
+        (amqp_constants.CLASS_CHANNEL, amqp_constants.CHANNEL_OPEN_OK): open_ok,
+        (amqp_constants.CLASS_CHANNEL, amqp_constants.CHANNEL_FLOW_OK): flow_ok,
+        (amqp_constants.CLASS_CHANNEL, amqp_constants.CHANNEL_CLOSE_OK): close_ok,
+        (amqp_constants.CLASS_CHANNEL, amqp_constants.CHANNEL_CLOSE): server_channel_close,
+
+        (amqp_constants.CLASS_EXCHANGE, amqp_constants.EXCHANGE_DECLARE_OK): exchange_declare_ok,
+        (amqp_constants.CLASS_EXCHANGE, amqp_constants.EXCHANGE_BIND_OK): exchange_bind_ok,
+        (amqp_constants.CLASS_EXCHANGE, amqp_constants.EXCHANGE_UNBIND_OK): exchange_unbind_ok,
+        (amqp_constants.CLASS_EXCHANGE, amqp_constants.EXCHANGE_DELETE_OK): exchange_delete_ok,
+
+        (amqp_constants.CLASS_QUEUE, amqp_constants.QUEUE_DECLARE_OK): queue_declare_ok,
+        (amqp_constants.CLASS_QUEUE, amqp_constants.QUEUE_DELETE_OK): queue_delete_ok,
+        (amqp_constants.CLASS_QUEUE, amqp_constants.QUEUE_BIND_OK): queue_bind_ok,
+        (amqp_constants.CLASS_QUEUE, amqp_constants.QUEUE_UNBIND_OK): queue_unbind_ok,
+        (amqp_constants.CLASS_QUEUE, amqp_constants.QUEUE_PURGE_OK): queue_purge_ok,
+
+        (amqp_constants.CLASS_BASIC, amqp_constants.BASIC_QOS_OK): basic_qos_ok,
+        (amqp_constants.CLASS_BASIC, amqp_constants.BASIC_CONSUME_OK): basic_consume_ok,
+        (amqp_constants.CLASS_BASIC, amqp_constants.BASIC_CANCEL_OK): basic_cancel_ok,
+        (amqp_constants.CLASS_BASIC, amqp_constants.BASIC_GET_OK): basic_get_ok,
+        (amqp_constants.CLASS_BASIC, amqp_constants.BASIC_GET_EMPTY): basic_get_empty,
+        (amqp_constants.CLASS_BASIC, amqp_constants.BASIC_DELIVER): basic_deliver,
+        (amqp_constants.CLASS_BASIC, amqp_constants.BASIC_CANCEL): server_basic_cancel,
+        (amqp_constants.CLASS_BASIC, amqp_constants.BASIC_ACK): basic_server_ack,
+        (amqp_constants.CLASS_BASIC, amqp_constants.BASIC_NACK): basic_server_nack,
+        (amqp_constants.CLASS_BASIC, amqp_constants.BASIC_RECOVER_OK): basic_recover_ok,
+
+        (amqp_constants.CLASS_CONFIRM, amqp_constants.CONFIRM_SELECT_OK): confirm_select_ok,
+    }
