@@ -15,13 +15,15 @@ def send():
 
     yield from channel.queue_declare(queue_name='hello')
 
-    yield from channel.basic_publish(
-        payload='Hello World!',
-        exchange_name='',
-        routing_key='hello'
-    )
+    while True:
 
-    print(" [x] Sent 'Hello World!'")
+        yield from channel.basic_publish(
+            payload='Hello World!',
+            exchange_name='',
+            routing_key='hello'
+        )
+
+        print(" [x] Sent 'Hello World!'")
     yield from protocol.close()
     transport.close()
 
